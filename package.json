@@ -1,0 +1,28 @@
+{
+  "name": "cast-streaming",
+  "version": "1.0.1",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "youtube",
+    "stream",
+    "html",
+    "video",
+    "subtitles",
+    "cast",
+    "streaming"
+  ],
+  "files": ["addon.js", "streaming/", "index.js", "README.md", "streaming/youtube.js"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Progamingsang/cast-streaming.git"
+  },
+  "author": "Progamingsang",
+  "license": "MIT",
+  "description": "An easy-to-use addon to embed and stream YouTube videos with clean HTML, a mini search-style interface, fullscreen support, and optional `.vtt` subtitles.",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
