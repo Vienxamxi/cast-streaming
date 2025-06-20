@@ -116,6 +116,10 @@ Automatically generated from videos[], formatted as:
 
 - Files like Subs/en.vtt or en.vtt must be statically served by your server.
 
+## How to Edit the Code
+
+If you want to fully edit the code, use the link in the top-right corner.
+
 🔗 License
 MIT © Progamingsang
 
