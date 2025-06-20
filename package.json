@@ -1,6 +1,6 @@
 {
   "name": "cast-streaming",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.js",
   "scripts": {
     "start": "node server.js"
@@ -17,7 +17,7 @@
   "files": ["addon.js", "streaming/", "index.js", "README.md", "streaming/youtube.js"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Progamingsang/cast-streaming.git"
+    "url": "https://github.com/Vienxamxi/cast-streaming.git"
   },
   "author": "Progamingsang",
   "license": "MIT",
