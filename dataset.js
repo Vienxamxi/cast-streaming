@@ -1,20 +1,29 @@
-module.exports = {
-  "yt:dQw4w9WgXcQ": {
-    name: "Rick Astley - Never Gonna Give You Up",
-    type: "Music",
+const config = require("./index");
+
+const dataset = {};
+
+(config.videos || []).forEach((video) => {
+  const id = video.id || `yt:${video.ytId}`;
+  if (!id || !video.ytId) return;
+
+  dataset[id] = {
+    name: video.title || "Untitled Video",
+    type: video.type || "other",
     sources: [
       {
-        ytId: "dQw4w9WgXcQ",
-        displayTitle: "Never Gonna Give You Up (Official Music Video)",
-        sourceName: "YouTube",
-        channel: "Rick Astley",
-        duration: "3:33",
-        thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-        quality: null,
-        size: null,
-        audio: ["English"],
-        subtitles: []
+        ytId: video.ytId,
+        displayTitle: video.displayTitle || video.title || video.ytId,
+        sourceName: video.sourceName || "YouTube",
+        channel: video.channel || "Unknown",
+        duration: video.duration || null,
+        thumbnail: video.thumbnail || `https://img.youtube.com/vi/${video.ytId}/hqdefault.jpg`,
+        quality: video.quality || null,
+        size: video.size || null,
+        audio: video.audio || ["Unknown"],
+        subtitles: video.subtitles || []
       }
     ]
-  }
-};
+  };
+});
+
+module.exports = dataset;
