@@ -1,43 +1,40 @@
-const config = require("./index"); // File người dùng tự định nghĩa videos và icon
+const config = require("./index");
 const { getYouTubeStream, getYouTubeSearchPageHTML } = require("./streaming/youtube");
 
 const dataset = {};
 
-// ✅ Tự tạo dataset chuẩn theo dạng "yt:<id>"
-(config.videos || []).forEach((v) => {
-  const id = v.id || `yt:${v.ytId}`;
-  if (!id || !v.ytId) return;
+// Build internal dataset from config.videos
+(config.videos || []).forEach((video) => {
+  const id = video.id || `yt:${video.ytId}`;
+  if (!id || !video.ytId) return;
 
   dataset[id] = {
-    name: v.title || "Untitled Video",
-    type: v.type || "other",
+    name: video.title || "Untitled Video",
+    type: video.type || "other",
     sources: [
       {
-        ytId: v.ytId,
-        displayTitle: v.displayTitle || v.title || v.ytId,
-        sourceName: v.sourceName || "YouTube",
-        channel: v.channel || "Unknown",
-        duration: v.duration || null,
-        thumbnail: v.thumbnail || `https://img.youtube.com/vi/${v.ytId}/hqdefault.jpg`,
-        quality: v.quality || null,
-        size: v.size || null,
-        audio: v.audio || ["Unknown"],
-        subtitles: v.subtitles || []
+        ytId: video.ytId,
+        displayTitle: video.displayTitle || video.title || video.ytId,
+        sourceName: video.sourceName || "YouTube",
+        channel: video.channel || "Unknown",
+        duration: video.duration || null,
+        thumbnail: video.thumbnail || `https://img.youtube.com/vi/${video.ytId}/hqdefault.jpg`,
+        quality: video.quality || null,
+        size: video.size || null,
+        audio: video.audio || ["Unknown"],
+        subtitles: video.subtitles || []
       }
     ]
   };
 });
 
-// ✅ Tạo addonBuilder: trả về function lấy stream theo ID
+// Stream handler
 function addonBuilder() {
   const streams = {};
-
   for (const id in dataset) {
-    const src = dataset[id]?.sources?.[0];
-    if (!src?.ytId) continue;
-
+    const source = dataset[id].sources[0];
     streams[id] = () =>
-      getYouTubeStream(src.ytId, src.displayTitle, src.subtitles || []);
+      getYouTubeStream(source.ytId, source.displayTitle, source.subtitles || []);
   }
 
   return {
@@ -45,7 +42,6 @@ function addonBuilder() {
   };
 }
 
-// ✅ Export ra cho người dùng gọi thoải mái
 module.exports = {
   addonBuilder,
   html: {
