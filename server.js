@@ -1,35 +1,22 @@
 const express = require("express");
-const dataset = require("./dataset");
-const { addonBuilder } = require("./addon");
-const { getYouTubeSearchPageHTML } = require("./streaming/youtube");
+const { html, addonBuilder } = require("cast-streaming");
 
 const app = express();
-const addon = addonBuilder(dataset);
+const addon = addonBuilder();
 
-// Trang danh sách video kiểu “YouTube search”
 app.get("/", (req, res) => {
-  const { html, contentType } = getYouTubeSearchPageHTML();
-  res.setHeader("Content-Type", contentType);
-  res.send(html);
+  const page = html.getYouTubeSearchPageHTML();
+  res.setHeader("Content-Type", page.contentType);
+  res.send(page.html);
 });
 
-// Trang phát stream theo ID
 app.get("/stream/:id", (req, res) => {
-  const streamData = addon.get(req.params.id);
-  if (!streamData) return res.status(404).send("Không tìm thấy video");
-
-  if (streamData.html) {
-    res.setHeader("Content-Type", streamData.contentType || "text/html");
-    return res.send(streamData.html);
-  }
-
-  if (streamData.redirectUrl) {
-    return res.redirect(streamData.redirectUrl);
-  }
-
-  res.status(500).send("Không có dữ liệu hợp lệ.");
+  const stream = addon.get(req.params.id);
+  if (!stream) return res.status(404).send("Video not found");
+  res.setHeader("Content-Type", stream.contentType);
+  res.send(stream.html);
 });
 
 app.listen(3000, () => {
-  console.log("📺 Server đang chạy tại http://localhost:3000");
+  console.log("🚀 Server is running at http://localhost:3000");
 });
