@@ -4,23 +4,40 @@ An easy-to-use addon to embed and stream YouTube videos with clean HTML, a mini 
 
 > 🛠 Simple to set up. Fully customizable. No external player required.
 
+## How to Edit the Code
+
+If you want to fully edit the code, use the link in the top-right corner.
+
 ---
 
 ## 🚀 Installation
 
 ```bash
-npm install cast-streaming express
+npm install cast-streaming express yt-search
 ```
+
+---
+
+### 📦 Features
+
+- ✅ Stream any YouTube video with fullscreen iframe UI
+- 🔍 Built-in live YouTube search with yt-search
+- 🧱 Static catalog via index.js config
+- 🎛️ Uses lite-youtube-embed for fast loading previews
+- 🧑‍💻 Fully customizable HTML output (no client-side framework needed)
+- 📁 Optional .vtt subtitle references supported
 
 ---
 
 ## 🔧 Configuration
 
-📦 Usage
+### 📦 Usage
+
+### 🧰 Quick Start
 
 Create an index.js file in your project to define your video list and icon:
 
-```bash
+```JavaScript
 module.exports = {
   icon: "https://www.youtube.com/s/desktop/f8fbb2fa/img/favicon_144x144.png",
   videos: [
@@ -42,92 +59,86 @@ module.exports = {
 
 💻 Set up a minimal code server.js with Express server
 
-```bash
+```JavaScript
 const express = require("express");
-const { html, dataset, addonBuilder } = require("cast-streaming");
+const { addonBuilder, html } = require("cast-streaming");
 
 const app = express();
 const addon = addonBuilder();
 
-app.get("/", (req, res) => {
-  const page = html.getYouTubeSearchPageHTML();
-  res.setHeader("Content-Type", page.contentType);
-  res.send(page.html);
+app.get("/", async (req, res) => {
+  const query = req.query.q || "";
+  const { html: page, contentType } = await html.getMergedSearchPageHTML(query);
+  res.setHeader("Content-Type", contentType);
+  res.send(page);
 });
 
 app.get("/stream/:id", (req, res) => {
-  const stream = addon.get(req.params.id);
-  if (!stream) return res.status(404).send("Video not found");
+  const id = req.params.id;
+  const query = req.query.q || "";
+  const stream =
+    addon.get(id) ||
+    html.getYouTubeStream(id.slice(3), "YouTube Video", [], query);
+
+  if (!stream) return res.status(404).send("Video not found.");
   res.setHeader("Content-Type", stream.contentType);
   res.send(stream.html);
 });
 
-app.listen(3000, () => {
-  console.log("🚀 Server running at http://localhost:3000");
-});
+app.listen(3000, () =>
+  console.log("🎬 cast-streaming running at http://localhost:3000")
+);
+```
+
+### 🔍 Search Support
+When visiting the homepage with /?q=your+keywords, the app will:
+
+- Return live YouTube search results (up to 10)
+
+- Render each video preview using <lite-youtube>
+
+- Maintain query state when opening and returning from video stream
+
+Example:
+
+```Link
+http://localhost:3000/?q=lofi+beats
 ```
 
 ---
 
-##
-
-✨ API
-addonBuilder()
+## ✨ API
+`addonBuilder()`
 Creates a stream resolver from your videos[] config.
+`html.getYouTubeStream(ytId, title, subtitles?)`
+Returns a player page for the given YouTube ID.
+- `ytId` (string): YouTube video ID (no prefix)
+- `title` (string): Display title
+- `subtitles` (string[]) (optional): List of .vtt files
+- `backQuery` (string) (optional): Value to preserve ?q= for return
 
-html.getYouTubeStream(ytId, title, subtitles?)
-Returns an HTML page to embed and stream a single YouTube video.
+`html.getMergedSearchPageHTML(query?)`
+Returns full HTML for homepage, with optional YouTube search result injection.
 
-ytId: YouTube video ID
-
-title: display title
-
-subtitles: array of .vtt files (optional)
-
-html.getYouTubeSearchPageHTML()
-Returns an HTML list of all configured videos — mimicking YouTube search result UI.
-
-dataset
-Automatically generated from videos[], formatted as:
-
-```bash
-{
-  "yt:dQw4w9WgXcQ": {
-    name: "Never Gonna Give You Up",
-    type: "music",
-    sources: [
-      {
-        ytId: "dQw4w9WgXcQ",
-        displayTitle: "RickRoll Classic",
-        sourceName: "YouTube",
-        channel: "Rick Astley",
-        duration: "3:33",
-        thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-        audio: ["English"],
-        subtitles: ["Subs/en.vtt", "Subs/vi.vtt"]
-      }
-    ]
-  }
-}
-```
-
-📝 Notes
-- YouTube embed (iframe) does not support custom .vtt subtitles. Use HTML5 <video> + .mp4 if needed.
-
-- Files like Subs/en.vtt or en.vtt must be statically served by your server.
-
-## How to Edit the Code
-
-If you want to fully edit the code, use the link in the top-right corner.
-
-🔗 License
-MIT © Progamingsang
+`dataset`
+The full generated dataset from your index.js, useful for debugging.
 
 ---
+
+## 📝 Notes
+
+- YouTube `<iframe>` embed does not support `.vtt` subtitles — you must use an HTML5 `<video>` if you need true subtitle support.
+
+- Any subtitle files (e.g., `Subs/en.vtt`) must be publicly served via Express (`app.use(express.static("Subs"))`)
+
+---
+
+## 📄 License
+MIT © Progamingsang
 
 MIT License
 
-Copyright (c) 2025 Vienxamxi
+Copyright (c) 2025 by Vienxamxi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

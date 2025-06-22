@@ -1,10 +1,10 @@
-const { icon, videos } = require("../index");
+const ytSearch = require("yt-search");
+const { icon, videos: staticVideos } = require("../index");
 
 /**
- * Generate an HTML page to stream a single YouTube video via iframe.
- * Accepts optional subtitle array (for future video player support).
+ * Render a fullscreen player for YouTube videos
  */
-function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
+function getYouTubeStream(videoId, displayTitle = "", subtitles = [], backQuery = "") {
   const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
   return {
@@ -14,13 +14,11 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
       <html lang="en">
         <head>
           <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>${displayTitle}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <style>
-            * { box-sizing: border-box; }
             body {
               margin: 0;
-              padding: 0;
               background: url('${thumbnail}') no-repeat center center fixed;
               background-size: cover;
               font-family: sans-serif;
@@ -34,9 +32,8 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
             }
             .overlay {
               position: absolute;
-              top: 0; left: 0;
-              width: 100%; height: 100%;
-              background: rgba(0, 0, 0, 0.5);
+              inset: 0;
+              background: rgba(0, 0, 0, 0.6);
               backdrop-filter: blur(5px);
               z-index: 0;
             }
@@ -48,7 +45,7 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
             iframe {
               z-index: 1;
               border: none;
-              box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+              box-shadow: 0 0 30px rgba(0,0,0,0.7);
             }
             .controls {
               z-index: 1;
@@ -58,16 +55,14 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
             }
             button {
               padding: 0.5rem 1rem;
-              font-size: 1rem;
-              border: none;
-              background-color: rgba(255,255,255,0.1);
+              background: rgba(255,255,255,0.1);
               color: white;
+              border: none;
               border-radius: 4px;
               cursor: pointer;
-              transition: background 0.3s ease;
             }
             button:hover {
-              background-color: rgba(255,255,255,0.3);
+              background: rgba(255,255,255,0.3);
             }
           </style>
         </head>
@@ -76,25 +71,20 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
           <h1>🎬 ${displayTitle}</h1>
           <iframe id="ytPlayer" width="640" height="360"
             src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0"
-            title="${displayTitle}" allow="autoplay; encrypted-media"
+            allow="autoplay; encrypted-media"
             allowfullscreen>
           </iframe>
           <div class="controls">
-            <button onclick="window.history.back()">🔙 Back</button>
-            <button onclick="toggleFullscreen()">🖥️ Fullscreen</button>
+            <button onclick="location.href='/?q=${encodeURIComponent(backQuery)}'">🔙 Back</button>
+            <button onclick="toggleFullscreen()">🖥 Fullscreen</button>
           </div>
           <script>
             function toggleFullscreen() {
-              const iframe = document.getElementById('ytPlayer');
-              if (iframe.requestFullscreen) {
-                iframe.requestFullscreen();
-              } else if (iframe.webkitRequestFullscreen) {
-                iframe.webkitRequestFullscreen();
-              } else if (iframe.msRequestFullscreen) {
-                iframe.msRequestFullscreen();
-              } else {
-                alert("Fullscreen is not supported by your browser.");
-              }
+              const iframe = document.getElementById("ytPlayer");
+              if (iframe.requestFullscreen) iframe.requestFullscreen();
+              else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+              else if (iframe.msRequestFullscreen) iframe.msRequestFullscreen();
+              else alert("Fullscreen not supported.");
             }
           </script>
         </body>
@@ -106,25 +96,64 @@ function getYouTubeStream(videoId, displayTitle = "", subtitles = []) {
 }
 
 /**
- * Generate a simple HTML page displaying a list of all videos
- * in a YouTube search-style layout.
+ * Render homepage with optional search results
  */
-function getYouTubeSearchPageHTML() {
+async function getMergedSearchPageHTML(query = "", limit = 10) {
+  const dynamicList = query
+    ? (await ytSearch(query)).videos.slice(0, limit).map((v) => ({
+        id: `yt:${v.videoId}`,
+        title: v.title,
+        thumbnail: v.thumbnail,
+        channel: v.author.name,
+        duration: v.timestamp,
+        description: v.description
+      }))
+    : [];
+
+  const list = [...dynamicList, ...(!query ? staticVideos : [])];
+  const heading = query ? `🔍 Results for "${query}"` : "🎞️ Video Catalog";
+
   return {
+    contentType: "text/html",
     html: `
       <!DOCTYPE html>
       <html lang="en">
         <head>
           <meta charset="UTF-8" />
-          <title>YouTube Search Results</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <link rel="icon" href="${icon}">
+          <title>${heading}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <link rel="icon" href="${icon}" />
+          <script type="module" src="https://cdn.jsdelivr.net/npm/lite-youtube-embed@0.2.0/+esm"></script>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lite-youtube-embed@0.2.0/src/lite-yt-embed.css" />
           <style>
             body {
               font-family: sans-serif;
-              background: #f2f2f2;
+              background: #f5f5f5;
               margin: 0;
               padding: 1rem;
+            }
+            h1 { text-align: center; }
+            form {
+              max-width: 600px;
+              margin: 0 auto 2rem;
+              display: flex;
+              gap: 0.5rem;
+            }
+            input[type="text"] {
+              flex: 1;
+              padding: 0.5rem 1rem;
+              font-size: 1rem;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            }
+            button {
+              padding: 0.5rem 1rem;
+              font-size: 1rem;
+              background: black;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
             }
             .video-list {
               max-width: 800px;
@@ -139,49 +168,48 @@ function getYouTubeSearchPageHTML() {
               padding: 1rem;
               display: flex;
               gap: 1rem;
-              box-shadow: 0 0 5px rgba(0,0,0,0.1);
+              box-shadow: 0 0 5px rgba(0,0,0,0.05);
             }
-            .video-thumb img {
+            .video-thumb img, lite-youtube {
               width: 160px;
+              height: 90px;
               border-radius: 4px;
+              display: block;
             }
-            .video-info h3 {
-              margin: 0 0 0.5rem;
-            }
-            .video-info p {
-              margin: 0.2rem 0 0;
-              color: #666;
-            }
-            .video-info a {
-              text-decoration: none;
-              color: black;
-            }
-            .video-info a:hover {
-              text-decoration: underline;
-            }
+            .video-info h3 { margin: 0 0 0.5rem; }
+            .video-info p { margin: 0.2rem 0; color: #666; }
+            a { color: black; text-decoration: none; }
+            a:hover { text-decoration: underline; }
           </style>
         </head>
         <body>
-          <h1 style="text-align:center">🔍 Search Results</h1>
+          <h1>${heading}</h1>
+          <form method="GET" action="/">
+            <input type="text" name="q" placeholder="Search YouTube..." value="${query || ""}" />
+            <button type="submit">Search</button>
+          </form>
           <div class="video-list">
-            ${videos.map(v => `
+            ${list.map((v) => `
               <div class="video-item">
-                <a class="video-thumb" href="/stream/${v.id}">
-                  <img src="${v.thumbnail}" alt="${v.title}">
+                <a class="video-thumb" href="/stream/${v.id}?q=${encodeURIComponent(query)}">
+                  ${
+                    v.id.startsWith("yt:") && v.thumbnail?.includes("ytimg")
+                      ? `<lite-youtube videoid="${v.id.slice(3)}" playlabel="${v.title}"></lite-youtube>`
+                      : `<img src="${v.thumbnail}" alt="${v.title}" />`
+                  }
                 </a>
                 <div class="video-info">
-                  <h3><a href="/stream/${v.id}">${v.title}</a></h3>
-                  <p>${v.channel} • ${v.duration}</p>
-                  <p>${v.description}</p>
+                  <h3><a href="/stream/${v.id}?q=${encodeURIComponent(query)}">${v.title}</a></h3>
+                  <p>${v.channel || "Unknown"} • ${v.duration || ""}</p>
+                  <p>${v.description || ""}</p>
                 </div>
               </div>
             `).join("")}
           </div>
         </body>
       </html>
-    `,
-    contentType: "text/html"
+    `
   };
 }
 
-module.exports = { getYouTubeStream, getYouTubeSearchPageHTML };
+module.exports = { getYouTubeStream, getMergedSearchPageHTML };
